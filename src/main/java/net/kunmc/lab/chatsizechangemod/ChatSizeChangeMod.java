@@ -8,8 +8,10 @@ import net.minecraft.command.Commands;
 import net.minecraft.command.impl.FillCommand;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -61,6 +63,18 @@ public class ChatSizeChangeMod {
                         .suggests(ChatSizeChangeModConfig::suggestConfigKeys)
                         .then(Commands.argument("value", StringArgumentType.string())
                                 .executes(ChatSizeChangeModConfig::setConfig))));
+    }
+
+    @SubscribeEvent
+    public void onLoggedIn(ClientPlayerNetworkEvent.LoggedInEvent event) {
+        chatSizeManager.loadScoreboard();
+    }
+
+    @SubscribeEvent
+    public void onLoggedIn(ClientPlayerNetworkEvent.LoggedOutEvent event) {
+        if (chatSizeManager.isLoadedScoreboard()) {
+            chatSizeManager.unloadScoreboard();
+        }
     }
 
     public ChatSizeManager getChatSizeManager() {
