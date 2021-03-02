@@ -1,14 +1,21 @@
 package net.kunmc.lab.chatsizechangemod;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
+import net.kunmc.lab.chatsizechangemod.config.ChatSizeChangeModConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.IngameGui;
+import net.minecraft.command.Commands;
+import net.minecraft.command.impl.FillCommand;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -20,6 +27,7 @@ public class ChatSizeChangeMod {
 
     public ChatSizeChangeMod() {
         this.chatSizeManager = new ChatSizeManager();
+        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ChatSizeChangeModConfig.getConfig());
         MinecraftForge.EVENT_BUS.register(this);
     }
 
@@ -43,6 +51,16 @@ public class ChatSizeChangeMod {
         if (!(Minecraft.getInstance().ingameGUI.getChatGUI() instanceof NewChatGuiExt)) {
             changeNewChatGui();
         }
+    }
+
+    @SubscribeEvent
+    public void onServerStarting(FMLServerStartingEvent event) {
+        event.getCommandDispatcher().register(Commands.literal("cscconfig")
+                .requires(source -> source.hasPermissionLevel(2))
+                .then(Commands.argument("key", StringArgumentType.string())
+                        .suggests(ChatSizeChangeModConfig::suggestConfigKeys)
+                        .then(Commands.argument("value", StringArgumentType.string())
+                                .executes(ChatSizeChangeModConfig::setConfig))));
     }
 
     public ChatSizeManager getChatSizeManager() {

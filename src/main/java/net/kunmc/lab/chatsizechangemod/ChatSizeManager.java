@@ -1,6 +1,6 @@
 package net.kunmc.lab.chatsizechangemod;
 
-import net.kunmc.lab.chatsizechangemod.config.ModConfig;
+import net.kunmc.lab.chatsizechangemod.config.ChatSizeChangeModConfig;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
@@ -9,17 +9,20 @@ import java.util.List;
 
 public class ChatSizeManager {
     public double calcChatScale(ITextComponent chatComponent) {
-        Double defaultChatSize = ModConfig.defaultChatSize.get();
+        double defaultChatSize = ChatSizeChangeModConfig.DEFAULT_CHAT_SIZE.get();
         if (chatComponent instanceof TranslationTextComponent) {
             TranslationTextComponent translation = (TranslationTextComponent)chatComponent;
             String key = translation.getKey();
             if (key.equals("chat.type.text")) {
                 List<ITextComponent> siblings = ((StringTextComponent)translation.getFormatArgs()[0]).getSiblings();
                 String name = ((StringTextComponent)siblings.get(0)).getText();
-                String message = ((StringTextComponent)translation.getFormatArgs()[1]).getText();
-                System.out.println(name + ", " + message);
+                return calcChatScale(name);
             }
         }
-        return Math.random() + 0.5; // デバッグ用
+        return defaultChatSize;
+    }
+
+    public double calcChatScale(String playerName) {
+        return Math.random() + 0.5;
     }
 }
