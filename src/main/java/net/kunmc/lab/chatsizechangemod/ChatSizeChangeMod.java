@@ -16,7 +16,10 @@ import java.lang.reflect.Modifier;
 @Mod("chatsizechangemod")
 @OnlyIn(Dist.CLIENT)
 public class ChatSizeChangeMod {
+    private final ChatSizeManager chatSizeManager;
+
     public ChatSizeChangeMod() {
+        this.chatSizeManager = new ChatSizeManager();
         MinecraftForge.EVENT_BUS.register(this);
     }
 
@@ -29,7 +32,7 @@ public class ChatSizeChangeMod {
             Field modifiersField = Field.class.getDeclaredField("modifiers");
             modifiersField.setAccessible(true);
             modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            field.set(ingameGUI, new NewChatGuiExt(minecraft));
+            field.set(ingameGUI, new NewChatGuiExt(minecraft, this));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -40,5 +43,9 @@ public class ChatSizeChangeMod {
         if (!(Minecraft.getInstance().ingameGUI.getChatGUI() instanceof NewChatGuiExt)) {
             changeNewChatGui();
         }
+    }
+
+    public ChatSizeManager getChatSizeManager() {
+        return chatSizeManager;
     }
 }

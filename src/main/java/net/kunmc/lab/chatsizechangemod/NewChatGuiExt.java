@@ -3,7 +3,6 @@ package net.kunmc.lab.chatsizechangemod;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ChatLine;
 import net.minecraft.client.gui.NewChatGui;
 import net.minecraft.client.gui.RenderComponentsUtil;
 import net.minecraft.client.gui.screen.ChatScreen;
@@ -30,68 +29,71 @@ public class NewChatGuiExt extends NewChatGui {
     private final List<ChatLine> drawnChatLines = Lists.newArrayList();
     private int scrollPos;
     private boolean isScrolled;
+    private final ChatSizeChangeMod modInstance;
 
-    public NewChatGuiExt(Minecraft mcIn) {
+    public NewChatGuiExt(Minecraft mcIn, ChatSizeChangeMod mod) {
         super(mcIn);
         this.mc = mcIn;
+        this.modInstance = mod;
     }
 
     public void render(int updateCounter) {
-        if (isChatVisible()) {
-            int lineCount = getLineCount();
-            int j = drawnChatLines.size();
-            if (j > 0) {
-                boolean flag = false;
-                if (getChatOpen()) {
-                    flag = true;
-                }
-                double scale = getScale();
-                int k = MathHelper.ceil((double)getChatWidth() / scale);
-                RenderSystem.pushMatrix();
-                RenderSystem.translatef(2.0F, 8.0F, 0.0F);
-                RenderSystem.scaled(scale, scale, 1.0D);
-                double d1 = mc.gameSettings.chatOpacity * (double)0.9F + (double)0.1F;
-                double d2 = mc.gameSettings.accessibilityTextBackgroundOpacity;
-                int l = 0;
-                Matrix4f matrix4f = Matrix4f.makeTranslate(0.0F, 0.0F, -100.0F);
-                for (int i1 = 0; i1 + scrollPos < drawnChatLines.size() && i1 < lineCount; ++i1) {
-                    ChatLine chatline = drawnChatLines.get(i1 + scrollPos);
-                    if (chatline != null) {
-                        int j1 = updateCounter - chatline.getUpdatedCounter();
-                        if (j1 < 200 || flag) {
-                            double d3 = flag ? 1.0D : getLineBrightness(j1);
-                            int l1 = (int)(255.0D * d3 * d1);
-                            int i2 = (int)(255.0D * d3 * d2);
-                            ++l;
-                            if (l1 > 3) {
-                                int k2 = -i1 * 9;
-                                fill(matrix4f, -2, k2 - 9, k + 4, k2, i2 << 24);
-                                String s = chatline.getChatComponent().getFormattedText();
-                                RenderSystem.enableBlend();
-                                mc.fontRenderer.drawStringWithShadow(s, 0.0F, (float)(k2 - 8), 16777215 + (l1 << 24));
-                                RenderSystem.disableAlphaTest();
-                                RenderSystem.disableBlend();
-                            }
-                        }
+        if (!isChatVisible()) {
+            return;
+        }
+        int lineCount = getLineCount();
+        int drawnCount = drawnChatLines.size();
+        if (drawnCount == 0) {
+            return;
+        }
+        boolean isChatOpen = getChatOpen();
+        double scale = getScale();
+        int width = MathHelper.ceil((double)getChatWidth() / scale);
+        RenderSystem.pushMatrix();
+        RenderSystem.translatef(2.0F, 8.0F, 0.0F);
+        RenderSystem.scaled(scale, scale, 1.0D);
+        double opacity = mc.gameSettings.chatOpacity * (double)0.9F + (double)0.1F;
+        double backgroundOpacity = mc.gameSettings.accessibilityTextBackgroundOpacity;
+        int l = 0;
+        Matrix4f matrix4f = Matrix4f.makeTranslate(0.0F, 0.0F, -100.0F);
+        for (int i = 0; i + scrollPos < drawnChatLines.size() && i < lineCount; i++) {
+            ChatLine chatline = drawnChatLines.get(i + scrollPos);
+            if (chatline != null) {
+                double chatScale = chatline.getChatScale();
+                int counter = updateCounter - chatline.getUpdatedCounter();
+                if (counter < 200 || isChatOpen) {
+                    double lineBrightness = isChatOpen ? 1.0D : getLineBrightness(counter);
+                    int brightness = (int)(255.0D * lineBrightness * opacity);
+                    int backgroundBrightness = (int)(255.0D * lineBrightness * backgroundOpacity);
+                    l++;
+                    if (brightness > 3) {
+                        int k2 = -i * 9;
+                        fill(matrix4f, -2, k2 - 9, width + 4, k2, backgroundBrightness << 24);
+                        String text = chatline.getChatComponent().getFormattedText();
+                        RenderSystem.pushMatrix();
+                        RenderSystem.enableBlend();
+                        mc.fontRenderer.drawStringWithShadow(text, 0.0F, (float)(k2 - 8), 16777215 + (brightness << 24));
+                        RenderSystem.disableAlphaTest();
+                        RenderSystem.disableBlend();
+                        RenderSystem.popMatrix();
                     }
                 }
-                if (flag) {
-                    int l2 = 9;
-                    RenderSystem.translatef(-3.0F, 0.0F, 0.0F);
-                    int i3 = j * l2 + j;
-                    int j3 = l * l2 + l;
-                    int k3 = scrollPos * j3 / j;
-                    int k1 = j3 * j3 / i3;
-                    if (i3 != j3) {
-                        int l3 = k3 > 0 ? 170 : 96;
-                        int i4 = isScrolled ? 13382451 : 3355562;
-                        fill(0, -k3, 2, -k3 - k1, i4 + (l3 << 24));
-                        fill(2, -k3, 1, -k3 - k1, 13421772 + (l3 << 24));
-                    }
-                }
-                RenderSystem.popMatrix();
             }
         }
+        if (isChatOpen) {
+            RenderSystem.translatef(-3.0F, 0.0F, 0.0F);
+            int i3 = drawnCount * 9 + drawnCount;
+            int j3 = l * 9 + l;
+            int k3 = scrollPos * j3 / drawnCount;
+            int k1 = j3 * j3 / i3;
+            if (i3 != j3) {
+                int l3 = k3 > 0 ? 170 : 96;
+                int i4 = isScrolled ? 13382451 : 3355562;
+                fill(0, -k3, 2, -k3 - k1, i4 + (l3 << 24));
+                fill(2, -k3, 1, -k3 - k1, 13421772 + (l3 << 24));
+            }
+        }
+        RenderSystem.popMatrix();
     }
 
     private boolean isChatVisible() {
@@ -121,24 +123,30 @@ public class NewChatGuiExt extends NewChatGui {
     }
 
     private void setChatLine(ITextComponent chatComponent, int chatLineId, int updateCounter, boolean displayOnly) {
+        double chatScale = modInstance.getChatSizeManager().calcChatScale(chatComponent);
+        setChatLine(chatComponent, chatLineId, updateCounter, displayOnly, chatScale);
+    }
+
+    private void setChatLine(ITextComponent chatComponent, int chatLineId, int updateCounter, boolean displayOnly, double chatScale) {
         if (chatLineId != 0) {
             deleteChatLine(chatLineId);
         }
-        int i = MathHelper.floor((double)getChatWidth() / getScale());
-        List<ITextComponent> list = RenderComponentsUtil.splitText(chatComponent, i, mc.fontRenderer, false, false);
+        int width = MathHelper.floor((double)getChatWidth() / getScale());
+        width = (int)(width * chatScale);
+        List<ITextComponent> list = RenderComponentsUtil.splitText(chatComponent, width, mc.fontRenderer, false, false);
         boolean flag = getChatOpen();
         for (ITextComponent itextcomponent : list) {
             if (flag && scrollPos > 0) {
                 isScrolled = true;
                 addScrollPos(1.0D);
             }
-            drawnChatLines.add(0, new ChatLine(updateCounter, itextcomponent, chatLineId));
+            drawnChatLines.add(0, new ChatLine(updateCounter, itextcomponent, chatLineId, chatScale));
         }
         while (drawnChatLines.size() > 100) {
             drawnChatLines.remove(drawnChatLines.size() - 1);
         }
         if (!displayOnly) {
-            chatLines.add(0, new ChatLine(updateCounter, chatComponent, chatLineId));
+            chatLines.add(0, new ChatLine(updateCounter, chatComponent, chatLineId, chatScale));
             while (chatLines.size() > 100) {
                 chatLines.remove(chatLines.size() - 1);
             }
@@ -148,9 +156,9 @@ public class NewChatGuiExt extends NewChatGui {
     public void refreshChat() {
         drawnChatLines.clear();
         resetScroll();
-        for (int i = chatLines.size() - 1; i >= 0; --i) {
+        for (int i = chatLines.size() - 1; i >= 0; i--) {
             ChatLine chatline = chatLines.get(i);
-            setChatLine(chatline.getChatComponent(), chatline.getChatLineID(), chatline.getUpdatedCounter(), true);
+            setChatLine(chatline.getChatComponent(), chatline.getChatLineID(), chatline.getUpdatedCounter(), true, chatline.getChatScale());
         }
     }
 
@@ -191,15 +199,16 @@ public class NewChatGuiExt extends NewChatGui {
             d2 = MathHelper.floor(d2 / scale);
             if (!(d1 < 0.0D) && !(d2 < 0.0D)) {
                 int i = Math.min(getLineCount(), drawnChatLines.size());
-                if (d1 <= (double)MathHelper.floor((double)getChatWidth() / getScale()) && d2 < (double)(9 * i + i)) {
+                if (d2 < (double)(9 * i + i)) {
                     int j = (int)(d2 / 9.0D + (double)scrollPos);
                     if (j >= 0 && j < drawnChatLines.size()) {
                         ChatLine chatline = drawnChatLines.get(j);
+                        double chatScale = chatline.getChatScale();
                         int k = 0;
                         for (ITextComponent itextcomponent : chatline.getChatComponent()) {
                             if (itextcomponent instanceof StringTextComponent) {
                                 k += mc.fontRenderer.getStringWidth(RenderComponentsUtil.removeTextColorsIfConfigured(((StringTextComponent)itextcomponent).getText(), false));
-                                if ((double)k > d1) {
+                                if ((double)k * chatScale > d1) {
                                     return itextcomponent;
                                 }
                             }
