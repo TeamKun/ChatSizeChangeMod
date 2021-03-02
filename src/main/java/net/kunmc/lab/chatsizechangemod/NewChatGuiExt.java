@@ -41,9 +41,8 @@ public class NewChatGuiExt extends NewChatGui {
         if (!isChatVisible()) {
             return;
         }
-        int lineCount = getLineCount();
-        int drawnCount = drawnChatLines.size();
-        if (drawnCount == 0) {
+        int height = getChatHeight();
+        if (drawnChatLines.isEmpty()) {
             return;
         }
         boolean isChatOpen = getChatOpen();
@@ -54,44 +53,58 @@ public class NewChatGuiExt extends NewChatGui {
         RenderSystem.scaled(scale, scale, 1.0D);
         double opacity = mc.gameSettings.chatOpacity * (double)0.9F + (double)0.1F;
         double backgroundOpacity = mc.gameSettings.accessibilityTextBackgroundOpacity;
-        int l = 0;
         Matrix4f matrix4f = Matrix4f.makeTranslate(0.0F, 0.0F, -100.0F);
-        for (int i = 0; i + scrollPos < drawnChatLines.size() && i < lineCount; i++) {
+        double renderLength = 0;
+        for (int i = 0; i + scrollPos < drawnChatLines.size(); i++) {
             ChatLine chatline = drawnChatLines.get(i + scrollPos);
             if (chatline != null) {
                 double chatScale = chatline.getChatScale();
                 int counter = updateCounter - chatline.getUpdatedCounter();
+                double lineHeight = 1 + 8 * chatScale;
                 if (counter < 200 || isChatOpen) {
                     double lineBrightness = isChatOpen ? 1.0D : getLineBrightness(counter);
                     int brightness = (int)(255.0D * lineBrightness * opacity);
                     int backgroundBrightness = (int)(255.0D * lineBrightness * backgroundOpacity);
-                    l++;
+                    if (renderLength + lineHeight > height) {
+                        break;
+                    }
                     if (brightness > 3) {
-                        int k2 = -i * 9;
-                        fill(matrix4f, -2, k2 - 9, width + 4, k2, backgroundBrightness << 24);
+                        fill(matrix4f, -2, (int)-(renderLength + lineHeight), width + 4, (int)-renderLength, backgroundBrightness << 24);
                         String text = chatline.getChatComponent().getFormattedText();
                         RenderSystem.pushMatrix();
                         RenderSystem.enableBlend();
-                        mc.fontRenderer.drawStringWithShadow(text, 0.0F, (float)(k2 - 8), 16777215 + (brightness << 24));
+                        RenderSystem.translated(0, -(renderLength + lineHeight - 1), 0);
+                        RenderSystem.scaled(chatScale, chatScale, 1.0D);
+                        mc.fontRenderer.drawStringWithShadow(text, 0.0F, 0.0F, 16777215 + (brightness << 24));
                         RenderSystem.disableAlphaTest();
                         RenderSystem.disableBlend();
                         RenderSystem.popMatrix();
                     }
+                    renderLength += lineHeight;
                 }
             }
         }
-        if (isChatOpen) {
-            RenderSystem.translatef(-3.0F, 0.0F, 0.0F);
-            int i3 = drawnCount * 9 + drawnCount;
-            int j3 = l * 9 + l;
-            int k3 = scrollPos * j3 / drawnCount;
-            int k1 = j3 * j3 / i3;
-            if (i3 != j3) {
-                int l3 = k3 > 0 ? 170 : 96;
-                int i4 = isScrolled ? 13382451 : 3355562;
-                fill(0, -k3, 2, -k3 - k1, i4 + (l3 << 24));
-                fill(2, -k3, 1, -k3 - k1, 13421772 + (l3 << 24));
+        double scrolledLength = 0;
+        double chatLength = 0;
+        for (int i = 0; i < drawnChatLines.size(); i++) {
+            ChatLine chatline = drawnChatLines.get(i);
+            if (chatline != null) {
+                double chatScale = chatline.getChatScale();
+                double lineHeight = 1 + 8 * chatScale;
+                chatLength += lineHeight;
+                if (i < scrollPos) {
+                    scrolledLength += lineHeight;
+                }
             }
+        }
+        if (isChatOpen && chatLength != renderLength) {
+            int pos = (int)(scrolledLength * renderLength / chatLength);
+            int length = (int)(renderLength * renderLength / chatLength);
+            int alpha = pos > 0 ? 170 : 96;
+            int color = isScrolled ? 13382451 : 3355562;
+            RenderSystem.translatef(-3.0F, 0.0F, 0.0F);
+            fill(0, -pos, 2, -length - pos, color + (alpha << 24));
+            fill(1, -pos, 2, -length - pos, 13421772 + (alpha << 24));
         }
         RenderSystem.popMatrix();
     }
@@ -132,7 +145,7 @@ public class NewChatGuiExt extends NewChatGui {
             deleteChatLine(chatLineId);
         }
         int width = MathHelper.floor((double)getChatWidth() / getScale());
-        width = (int)(width * chatScale);
+        width = (int)(width / chatScale);
         List<ITextComponent> list = RenderComponentsUtil.splitText(chatComponent, width, mc.fontRenderer, false, false);
         boolean flag = getChatOpen();
         for (ITextComponent itextcomponent : list) {
@@ -191,29 +204,45 @@ public class NewChatGuiExt extends NewChatGui {
 
     @Nullable
     public ITextComponent getTextComponent(double x, double y) {
-        if (getChatOpen() && !mc.gameSettings.hideGUI && isChatVisible()) {
-            double scale = getScale();
-            double d1 = x - 2.0D;
-            double d2 = (double)mc.getMainWindow().getScaledHeight() - y - 40.0D;
-            d1 = MathHelper.floor(d1 / scale);
-            d2 = MathHelper.floor(d2 / scale);
-            if (!(d1 < 0.0D) && !(d2 < 0.0D)) {
-                int i = Math.min(getLineCount(), drawnChatLines.size());
-                if (d2 < (double)(9 * i + i)) {
-                    int j = (int)(d2 / 9.0D + (double)scrollPos);
-                    if (j >= 0 && j < drawnChatLines.size()) {
-                        ChatLine chatline = drawnChatLines.get(j);
-                        double chatScale = chatline.getChatScale();
-                        int k = 0;
-                        for (ITextComponent itextcomponent : chatline.getChatComponent()) {
-                            if (itextcomponent instanceof StringTextComponent) {
-                                k += mc.fontRenderer.getStringWidth(RenderComponentsUtil.removeTextColorsIfConfigured(((StringTextComponent)itextcomponent).getText(), false));
-                                if ((double)k * chatScale > d1) {
-                                    return itextcomponent;
-                                }
-                            }
-                        }
-                    }
+        if (!getChatOpen() || mc.gameSettings.hideGUI || !isChatVisible()) {
+            return null;
+        }
+        double scale = getScale();
+        double cx = x - 2.0D;
+        double cy = (double)mc.getMainWindow().getScaledHeight() - y - 40.0D;
+        cx = MathHelper.floor(cx / scale);
+        cy = MathHelper.floor(cy / scale);
+        if (cx < 0.0D || cy < 0.0D) {
+            return null;
+        }
+        double height = getChatHeight();
+        double renderLength = 0;
+        ChatLine line = null;
+        for (int i = scrollPos; i < drawnChatLines.size(); i++) {
+            ChatLine chatline = drawnChatLines.get(i);
+            if (chatline != null) {
+                double chatScale = chatline.getChatScale();
+                double lineHeight = 1 + 8 * chatScale;
+                renderLength += lineHeight;
+                if (renderLength > cy) {
+                    line = chatline;
+                    break;
+                }
+                if (renderLength > height) {
+                    return null;
+                }
+            }
+        }
+        if (line == null) {
+            return null;
+        }
+        double chatScale = line.getChatScale();
+        int width = 0;
+        for (ITextComponent component : line.getChatComponent()) {
+            if (component instanceof StringTextComponent) {
+                width += mc.fontRenderer.getStringWidth(RenderComponentsUtil.removeTextColorsIfConfigured(((StringTextComponent)component).getText(), false));
+                if (chatScale * width > cx) {
+                    return component;
                 }
             }
         }

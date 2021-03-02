@@ -20,6 +20,6 @@ public class ChatSizeManager {
                 System.out.println(name + ", " + message);
             }
         }
-        return Math.random() + 0.5;
+        return Math.random() + 0.5; // デバッグ用
     }
 }
