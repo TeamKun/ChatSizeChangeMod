@@ -1,24 +1,16 @@
 package net.kunmc.lab.chatsizechangemod;
 
 import net.kunmc.lab.chatsizechangemod.config.ChatSizeChangeModConfig;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.scoreboard.Score;
-import net.minecraft.scoreboard.ScoreObjective;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class ChatSizeManager {
-    private Map<String, Integer> scoreboardDataMap = null;
-    private boolean isLoadedScoreboard;
+    private Map<String, Integer> followerData = null;
+    private boolean isLoadedFollowerData;
     private double average;
     private double std;
 
@@ -30,6 +22,7 @@ public class ChatSizeManager {
             if (key.equals("chat.type.text")) {
                 List<ITextComponent> siblings = ((StringTextComponent)translation.getFormatArgs()[0]).getSiblings();
                 String name = ((StringTextComponent)siblings.get(0)).getText();
+                name = ((StringTextComponent)translation.getFormatArgs()[1]).getUnformattedComponentText();
                 return calcChatScale(name);
             }
         }
@@ -42,42 +35,36 @@ public class ChatSizeManager {
         double maxChatSize = ChatSizeChangeModConfig.MAX_CHAT_SIZE.get();
         double chatSizeMultiply = ChatSizeChangeModConfig.CHAT_SIZE_MULTIPLY.get();
         double chatBaseSize = ChatSizeChangeModConfig.CHAT_BASE_SIZE.get();
-        if (!isLoadedScoreboard || !scoreboardDataMap.containsKey(playerName)) {
+        if (!isLoadedFollowerData || !followerData.containsKey(playerName)) {
             return defaultChatSize;
         }
-        int followers = scoreboardDataMap.get(playerName);
+        int followers = followerData.get(playerName);
         double chatScale = chatBaseSize + chatSizeMultiply * (followers - average) / std;
         return Math.min(Math.max(chatScale, minChatSize), maxChatSize);
     }
 
-    public void loadScoreboard() {
-        scoreboardDataMap = new HashMap<>();
-        IntegratedServer server = Objects.requireNonNull(Minecraft.getInstance().getIntegratedServer());
-        Scoreboard scoreboard = server.getScoreboard();
-        ScoreObjective objective = scoreboard.getObjective("twitter");
-        if (objective == null) {
-            return;
-        }
-        for (Score score : scoreboard.getSortedScores(objective)) {
-            int follower = score.getScorePoints();
+    public void loadFollowerData(Map<String, Integer> followerData) {
+        int n = followerData.size();
+        this.followerData = followerData;
+        average = 0;
+        std = 0;
+        for (int follower : followerData.values()) {
             average += follower;
-            scoreboardDataMap.put(score.getPlayerName(), follower);
         }
-        int n = scoreboardDataMap.size();
         average /= n;
-        for (int follower : scoreboardDataMap.values()) {
+        for (int follower : followerData.values()) {
             std += (average - follower) * (average - follower);
         }
         std = Math.sqrt(std / n);
-        isLoadedScoreboard = true;
+        isLoadedFollowerData = true;
     }
 
-    public void unloadScoreboard() {
-        scoreboardDataMap = null;
-        isLoadedScoreboard = false;
+    public void unloadFollowerData() {
+        followerData = null;
+        isLoadedFollowerData = false;
     }
 
-    public boolean isLoadedScoreboard() {
-        return isLoadedScoreboard;
+    public boolean isLoadedFollowerData() {
+        return isLoadedFollowerData;
     }
 }
