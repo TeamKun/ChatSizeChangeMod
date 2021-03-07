@@ -2,29 +2,28 @@ package net.kunmc.lab.chatsizechangemod;
 
 import net.kunmc.lab.chatsizechangemod.config.ChatSizeChangeModConfig;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
 
-import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ChatSizeManager {
     private Map<String, Integer> followerData = null;
     private boolean isLoadedFollowerData;
     private double average;
     private double std;
+    private final Pattern chatPattern = Pattern.compile("<(\\w{3,16}+)> (.+)");
 
     public double calcChatScale(ITextComponent chatComponent) {
         double defaultChatSize = ChatSizeChangeModConfig.DEFAULT_CHAT_SIZE.get();
-        if (chatComponent instanceof TranslationTextComponent) {
-            TranslationTextComponent translation = (TranslationTextComponent)chatComponent;
-            String key = translation.getKey();
-            if (key.equals("chat.type.text")) {
-                List<ITextComponent> siblings = ((StringTextComponent)translation.getFormatArgs()[0]).getSiblings();
-                String name = ((StringTextComponent)siblings.get(0)).getText();
-                name = ((StringTextComponent)translation.getFormatArgs()[1]).getUnformattedComponentText();
-                return calcChatScale(name);
-            }
+        String text = chatComponent.stream()
+                .map(ITextComponent::getUnformattedComponentText)
+                .collect(Collectors.joining());
+        Matcher matcher = chatPattern.matcher(text);
+        if (matcher.matches()) {
+            String name = matcher.group(1);
+            return calcChatScale(name);
         }
         return defaultChatSize;
     }
@@ -43,16 +42,16 @@ public class ChatSizeManager {
         return Math.min(Math.max(chatScale, minChatSize), maxChatSize);
     }
 
-    public void loadFollowerData(Map<String, Integer> followerData) {
-        int n = followerData.size();
-        this.followerData = followerData;
+    public void loadFollowerData(Map<String, Integer> data) {
+        int n = data.size();
+        followerData = data;
         average = 0;
         std = 0;
-        for (int follower : followerData.values()) {
+        for (int follower : data.values()) {
             average += follower;
         }
         average /= n;
-        for (int follower : followerData.values()) {
+        for (int follower : data.values()) {
             std += (average - follower) * (average - follower);
         }
         std = Math.sqrt(std / n);

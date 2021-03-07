@@ -24,6 +24,7 @@ public class PacketContainer {
 
     public static PacketContainer decode(PacketBuffer buffer) {
         Map<String, Integer> followerData = new HashMap<>();
+        buffer.readerIndex(0);
         int n = buffer.readInt();
         for (int i = 0; i < n; i++) {
             String name = buffer.readString();
@@ -33,8 +34,9 @@ public class PacketContainer {
         return new PacketContainer(followerData);
     }
 
-    public static boolean handle(PacketContainer message, Supplier<NetworkEvent.Context> supplier, ChatSizeManager manager) {
-        supplier.get().enqueueWork(() -> manager.loadFollowerData(message.followerData));
+    public static boolean handle(ChatSizeManager manager, PacketContainer message) {
+        System.out.println("handle");
+        manager.loadFollowerData(message.followerData);
         return true;
     }
 }

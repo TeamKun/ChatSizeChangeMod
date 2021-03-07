@@ -12,7 +12,6 @@ import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DeferredWorkQueue;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
@@ -26,7 +25,6 @@ import net.minecraftforge.fml.network.simple.SimpleChannel;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 @Mod("chatsizechangemod")
@@ -71,7 +69,7 @@ public class ChatSizeChangeMod {
         channel.messageBuilder(PacketContainer.class, 0)
                 .encoder(PacketContainer::encode)
                 .decoder(PacketContainer::decode)
-                .consumer((PacketContainer message, Supplier<NetworkEvent.Context> supplier) -> PacketContainer.handle(message, supplier, getChatSizeManager()))
+                .consumer((PacketContainer message, Supplier<NetworkEvent.Context> supplier) -> PacketContainer.handle(getChatSizeManager(), message))
                 .add();
     }
 
@@ -93,7 +91,7 @@ public class ChatSizeChangeMod {
     }
 
     @SubscribeEvent
-    public void onLoggedIn(ClientPlayerNetworkEvent.LoggedOutEvent event) {
+    public void onLoggedOut(ClientPlayerNetworkEvent.LoggedOutEvent event) {
         if (chatSizeManager.isLoadedFollowerData()) {
             chatSizeManager.unloadFollowerData();
         }
