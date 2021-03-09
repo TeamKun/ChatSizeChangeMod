@@ -27,6 +27,7 @@ public class ChatSizeChangeModConfig {
     public static final ForgeConfigSpec.ConfigValue<Double> MAX_CHAT_SIZE;
     public static final ForgeConfigSpec.ConfigValue<Double> CHAT_SIZE_MULTIPLY;
     public static final ForgeConfigSpec.ConfigValue<Double> CHAT_BASE_SIZE;
+    public static final ForgeConfigSpec.ConfigValue<Boolean> DEBUG_MODE;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -35,16 +36,19 @@ public class ChatSizeChangeModConfig {
         MAX_CHAT_SIZE = builder.define("chatSizeChangeMod.maxChatSize", 3.0);
         CHAT_SIZE_MULTIPLY = builder.define("chatSizeChangeMod.chatSizeMultiply", 1.0);
         CHAT_BASE_SIZE = builder.define("chatSizeChangeMod.chatBaseSize", 1.0);
+        DEBUG_MODE = builder.define("chatSizeChangeMod.debugMode", false);
         configs.put("defaultChatSize", DEFAULT_CHAT_SIZE);
         configs.put("minChatSize", MIN_CHAT_SIZE);
         configs.put("maxChatSize", MAX_CHAT_SIZE);
         configs.put("chatSizeMultiply", CHAT_SIZE_MULTIPLY);
         configs.put("chatBaseSize", CHAT_BASE_SIZE);
+        configs.put("debugMode", DEBUG_MODE);
         configTypes.put("defaultChatSize", Double.class);
         configTypes.put("minChatSize", Double.class);
         configTypes.put("maxChatSize", Double.class);
         configTypes.put("chatSizeMultiply", Double.class);
         configTypes.put("chatBaseSize", Double.class);
+        configTypes.put("debugMode", Boolean.class);
         config = builder.build();
     }
 

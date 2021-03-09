@@ -22,7 +22,8 @@ public class ChatSizeManager {
                 .collect(Collectors.joining());
         Matcher matcher = chatPattern.matcher(text);
         if (matcher.matches()) {
-            String name = matcher.group(1);
+            boolean isDebugMode = ChatSizeChangeModConfig.DEBUG_MODE.get();
+            String name = matcher.group(isDebugMode ? 2 : 1);
             return calcChatScale(name);
         }
         return defaultChatSize;

@@ -1,11 +1,9 @@
 package net.kunmc.lab.chatsizechangemod;
 
 import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 public class PacketContainer {
     private final Map<String, Integer> followerData;
@@ -35,7 +33,6 @@ public class PacketContainer {
     }
 
     public static boolean handle(ChatSizeManager manager, PacketContainer message) {
-        System.out.println("handle");
         manager.loadFollowerData(message.followerData);
         return true;
     }
