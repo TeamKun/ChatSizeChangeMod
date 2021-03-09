@@ -30,13 +30,12 @@ public class ChatSizeManager {
     }
 
     public double calcChatScale(String playerName) {
-        double defaultChatSize = ChatSizeChangeModConfig.DEFAULT_CHAT_SIZE.get();
         double minChatSize = ChatSizeChangeModConfig.MIN_CHAT_SIZE.get();
         double maxChatSize = ChatSizeChangeModConfig.MAX_CHAT_SIZE.get();
         double chatSizeMultiply = ChatSizeChangeModConfig.CHAT_SIZE_MULTIPLY.get();
         double chatBaseSize = ChatSizeChangeModConfig.CHAT_BASE_SIZE.get();
         if (!isLoadedFollowerData || !followerData.containsKey(playerName)) {
-            return defaultChatSize;
+            return minChatSize;
         }
         int followers = followerData.get(playerName);
         double chatScale = chatBaseSize + chatSizeMultiply * (followers - average) / std;
