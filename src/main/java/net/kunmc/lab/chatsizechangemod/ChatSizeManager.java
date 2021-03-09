@@ -22,7 +22,7 @@ public class ChatSizeManager {
                 .collect(Collectors.joining());
         Matcher matcher = chatPattern.matcher(text);
         if (matcher.matches()) {
-            String name = matcher.group(2);
+            String name = matcher.group(1);
             return calcChatScale(name);
         }
         return defaultChatSize;
