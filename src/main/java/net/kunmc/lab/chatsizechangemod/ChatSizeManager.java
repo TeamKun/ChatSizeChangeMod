@@ -13,27 +13,26 @@ public class ChatSizeManager {
     private boolean isLoadedFollowerData;
     private double average;
     private double std;
-    private final Pattern chatPattern = Pattern.compile("<(\\w{3,16}+)> (.+)");
+    private final Pattern chatPattern = Pattern.compile("<(\\w{3,16}+).*?> (.+)");
 
     public double calcChatScale(ITextComponent chatComponent) {
-        double defaultChatSize = ChatSizeChangeModConfig.DEFAULT_CHAT_SIZE.get();
+        double defaultChatSize = ChatSizeChangeModConfig.getDefaultChatSize();
         String text = chatComponent.stream()
                 .map(ITextComponent::getUnformattedComponentText)
                 .collect(Collectors.joining());
         Matcher matcher = chatPattern.matcher(text);
         if (matcher.matches()) {
-            boolean isDebugMode = ChatSizeChangeModConfig.DEBUG_MODE.get();
-            String name = matcher.group(isDebugMode ? 2 : 1);
+            String name = matcher.group(2);
             return calcChatScale(name);
         }
         return defaultChatSize;
     }
 
     public double calcChatScale(String playerName) {
-        double minChatSize = ChatSizeChangeModConfig.MIN_CHAT_SIZE.get();
-        double maxChatSize = ChatSizeChangeModConfig.MAX_CHAT_SIZE.get();
-        double chatSizeMultiply = ChatSizeChangeModConfig.CHAT_SIZE_MULTIPLY.get();
-        double chatBaseSize = ChatSizeChangeModConfig.CHAT_BASE_SIZE.get();
+        double minChatSize = ChatSizeChangeModConfig.getMinChatSize();
+        double maxChatSize = ChatSizeChangeModConfig.getMaxChatSize();
+        double chatSizeMultiply = ChatSizeChangeModConfig.getChatSizeMultiply();
+        double chatBaseSize = ChatSizeChangeModConfig.getChatBaseSize();
         if (!isLoadedFollowerData || !followerData.containsKey(playerName)) {
             return minChatSize;
         }
